@@ -14,7 +14,6 @@
   var SIDEBAR_MIN = 240;
   var SIDEBAR_MAX = 420;
   var MOBILE_BREAKPOINT = 768;
-  var TABLE_WRAPPER_CLASS = "webhelp-table-scroll";
 
   var body = document.body;
   var root = document.documentElement;
@@ -167,6 +166,15 @@
     doc.head.appendChild(link);
   }
 
+  function ensureScript(doc, id, src) {
+    if (!doc || !doc.head || doc.getElementById(id)) return;
+    var script = doc.createElement("script");
+    script.id = id;
+    script.src = src;
+    script.async = false;
+    doc.head.appendChild(script);
+  }
+
   function resolvedTheme() {
     var setting = root.getAttribute("data-theme") || "system";
     if (setting === "system") return systemTheme && systemTheme.matches ? "dark" : "light";
@@ -180,6 +188,8 @@
     doc.documentElement.style.setProperty("--webhelp-font-size", getFontSize() + "px");
     if (kind === "topic") {
       ensureStylesheet(doc, "webhelpTopicStyles", resolveAsset("assets/webhelp-topic.css"));
+      ensureStylesheet(doc, "webhelpContentEnhanceStyles", resolveAsset("assets/content-enhance.css"));
+      ensureScript(doc, "webhelpContentEnhanceScript", resolveAsset("assets/content-enhance.js"));
       doc.documentElement.classList.add("webhelp-topic-document");
     } else {
       ensureStylesheet(doc, "webhelpNavStyles", resolveAsset("assets/webhelp-nav.css"));
@@ -441,20 +451,6 @@
     }
   }
 
-  function wrapWideTables(doc) {
-    Array.prototype.slice.call(doc.querySelectorAll("table")).forEach(function (table) {
-      if (table.parentElement && table.parentElement.closest("table")) return;
-      if (table.parentElement && table.parentElement.classList.contains(TABLE_WRAPPER_CLASS)) return;
-      var wrapper = doc.createElement("div");
-      wrapper.className = TABLE_WRAPPER_CLASS;
-      wrapper.setAttribute("role", "region");
-      wrapper.setAttribute("aria-label", "可横向滚动的表格");
-      wrapper.tabIndex = 0;
-      table.parentNode.insertBefore(wrapper, table);
-      wrapper.appendChild(table);
-    });
-  }
-
   function quickActionIcon(kind) {
     var icons = {
       legacy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 4v4.6h4.6"/></svg>',
@@ -544,7 +540,6 @@
     try { doc = contentFrame.contentDocument; } catch (error) { return; }
     if (!doc || !doc.documentElement || !doc.body) return;
     applyDocumentPreferences(doc, "topic");
-    wrapWideTables(doc);
     enhanceHomePage(doc);
     if (doc.title) document.title = doc.title + " - " + projectTitle;
   }

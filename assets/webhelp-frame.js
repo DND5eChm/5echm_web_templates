@@ -22,5 +22,33 @@
     return "topics/" + parts.map(function (part) { return encodeURIComponent(part); }).join("/");
   }
 
+  function enhanceContent() {
+    if (!window.addEventListener || !document.querySelector || !document.documentElement.classList) return;
+    var doc;
+    try { doc = frame.contentDocument; } catch (error) { return; }
+    if (!doc || !doc.head) return;
+    function stylesheet(id, href) {
+      if (doc.getElementById(id)) return;
+      var link = doc.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = href;
+      doc.head.appendChild(link);
+    }
+    function asset(pathname) {
+      try { return new URL(pathname, window.location.href).href; } catch (error) { return pathname; }
+    }
+    stylesheet("webhelpTopicStyles", asset("assets/webhelp-topic.css"));
+    stylesheet("webhelpContentEnhanceStyles", asset("assets/content-enhance.css"));
+    if (!doc.getElementById("webhelpContentEnhanceScript")) {
+      var script = doc.createElement("script");
+      script.id = "webhelpContentEnhanceScript";
+      script.src = asset("assets/content-enhance.js");
+      script.async = false;
+      doc.head.appendChild(script);
+    }
+  }
+
   frame.src = path(pageValue());
+  if (frame.addEventListener) frame.addEventListener("load", enhanceContent);
 })();
