@@ -11,6 +11,9 @@
   --topic-warning: #8a5b00;
   --topic-warning-bg: #fff8df;
   --topic-info-bg: #fff0f0;
+  --scrollbar-thumb: rgba(36, 38, 41, 0.26);
+  --scrollbar-thumb-hover: rgba(36, 38, 41, 0.42);
+  --scrollbar-track: transparent;
   --webhelp-font-size: 16px;
   color-scheme: light;
   background: var(--topic-bg);
@@ -29,7 +32,48 @@
   --topic-warning: #f3c86a;
   --topic-warning-bg: #332b19;
   --topic-info-bg: #332023;
+  --scrollbar-thumb: rgba(231, 233, 236, 0.3);
+  --scrollbar-thumb-hover: rgba(231, 233, 236, 0.48);
+  --scrollbar-track: transparent;
   color-scheme: dark;
+}
+
+html,
+body,
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 24px;
+  background: var(--scrollbar-thumb);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 html.webhelp-topic-document,

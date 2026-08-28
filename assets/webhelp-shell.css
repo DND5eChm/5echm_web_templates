@@ -14,6 +14,9 @@
   --accent-hover: #7f1515;
   --accent-soft: #fbeaea;
   --focus: #2563eb;
+  --scrollbar-thumb: rgba(32, 33, 36, 0.26);
+  --scrollbar-thumb-hover: rgba(32, 33, 36, 0.42);
+  --scrollbar-track: transparent;
   --shadow-menu: 0 8px 22px rgba(24, 27, 31, 0.14);
   color-scheme: light;
   font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Segoe UI", system-ui, sans-serif;
@@ -32,8 +35,49 @@ html[data-resolved-theme="dark"] {
   --accent-hover: #e47878;
   --accent-soft: #3a2022;
   --focus: #72a7ff;
+  --scrollbar-thumb: rgba(232, 233, 235, 0.3);
+  --scrollbar-thumb-hover: rgba(232, 233, 235, 0.48);
+  --scrollbar-track: transparent;
   --shadow-menu: 0 10px 26px rgba(0, 0, 0, 0.34);
   color-scheme: dark;
+}
+
+html,
+body,
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 24px;
+  background: var(--scrollbar-thumb);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 * {
