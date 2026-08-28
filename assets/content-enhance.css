@@ -667,12 +667,19 @@ html.quickref-document .quickref-preview-content a {
 }
 
 html.webhelp-topic-document .statblock-view-toggle {
-  display: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   margin: 8px 0;
 }
 
 html.webhelp-topic-document .statblock-view-toggle__button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
   padding: 5px 9px;
   color: var(--topic-text, #242629);
   background: var(--topic-surface-muted, #f7f7f8);
@@ -681,6 +688,83 @@ html.webhelp-topic-document .statblock-view-toggle__button {
   font: inherit;
   font-size: 0.82em;
   cursor: pointer;
+}
+
+html.webhelp-topic-document .statblock-view-toggle__button:focus-visible {
+  outline: 2px solid var(--statblock-accent);
+  outline-offset: 2px;
+}
+
+html.webhelp-topic-document .statblock-view-toggle__button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+html.webhelp-topic-document .statblock-export-button {
+  display: inline-flex;
+  margin-left: auto;
+  color: var(--topic-text, #242629);
+  background: var(--topic-surface-muted, #f7f7f8);
+  border-color: var(--topic-border, #dedbd7);
+}
+
+html.webhelp-topic-document .statblock-export-button:hover:not(:disabled) {
+  color: var(--statblock-accent);
+  background: var(--topic-surface, #ffffff);
+  border-color: var(--statblock-accent);
+}
+
+html.webhelp-topic-document .statblock-export-button .statblock-button-icon {
+  color: var(--statblock-accent);
+}
+
+html.webhelp-topic-document .statblock-button-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html.webhelp-topic-document .statblock-export-holder {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: -100000px;
+  pointer-events: none;
+}
+
+html.webhelp-topic-document .statblock-export-capture {
+  box-sizing: border-box;
+  padding: 24px;
+  color: #242629;
+  background: #ffffff;
+  border: 2px solid #800000;
+  --topic-bg: #ffffff;
+  --topic-surface: #ffffff;
+  --topic-surface-muted: #f7f7f8;
+  --topic-text: #242629;
+  --topic-text-muted: #666a70;
+  --topic-border: #dedbd7;
+  --topic-accent: #800000;
+  --topic-link: #174e88;
+  --statblock-surface: #ffffff;
+  --statblock-muted: #f7f7f8;
+  --statblock-text: #242629;
+  --statblock-text-muted: #666a70;
+  --statblock-border: #dedbd7;
+  --statblock-accent: #800000;
+}
+
+html.webhelp-topic-document .statblock-export-capture .statblock-responsive {
+  display: block !important;
+}
+
+html.webhelp-topic-document .statblock-export-capture .statblock-responsive__media img {
+  max-height: none;
 }
 
 html.webhelp-topic-document .statblock-view-toggle__button[aria-pressed="true"] {
@@ -866,8 +950,12 @@ html.webhelp-topic-document .statblock-layout-scroll {
 }
 
 @media (max-width: 767px) {
-  html.webhelp-topic-document .statblock-view-toggle {
-    display: flex;
+  html.webhelp-topic-document .statblock-view-toggle__button {
+    display: inline-flex;
+  }
+
+  html.webhelp-topic-document .statblock-export-button {
+    margin-left: 0;
   }
 
   html.webhelp-topic-document .stat-block {
@@ -928,6 +1016,7 @@ html.webhelp-topic-document .statblock-layout-scroll {
 
 @media print {
   html.webhelp-topic-document .statblock-view-toggle,
+  html.webhelp-topic-document .statblock-export-holder,
   html.webhelp-topic-document .statblock-responsive {
     display: none !important;
   }

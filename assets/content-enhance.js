@@ -3,6 +3,8 @@
 
   var STORAGE_KEY = "5echm.webhelp.statblock-view";
   var MOBILE_QUERY = "(max-width: 767px)";
+  var EXPORT_MAX_DIMENSION = 8192;
+  var EXPORT_MAX_AREA = 16000000;
   var ABILITY_LABELS = {
     "力量": "str", "str": "str", "strength": "str",
     "敏捷": "dex", "dex": "dex", "dexterity": "dex",
@@ -113,6 +115,19 @@
     var element = doc.createElement(tag);
     if (className) element.className = className;
     return element;
+  }
+
+  function makeSvgIcon(doc, pathData) {
+    var namespace = "http://www.w3.org/2000/svg";
+    var svg = doc.createElementNS(namespace, "svg");
+    var path = doc.createElementNS(namespace, "path");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    svg.classList.add("statblock-button-icon");
+    path.setAttribute("d", pathData);
+    svg.appendChild(path);
+    return svg;
   }
 
   function setButtonState(button, active) {
@@ -1208,6 +1223,328 @@
     return responsive;
   }
 
+  function waitForImages(root) {
+    return Promise.all(toArray(root.querySelectorAll("img")).map(function (image) {
+      if (image.complete && image.naturalWidth) return Promise.resolve();
+      return new Promise(function (resolve, reject) {
+        image.addEventListener("load", resolve, { once: true });
+        image.addEventListener("error", function () { reject(new Error("图片加载失败")); }, { once: true });
+      });
+    }));
+  }
+
+  function imageToDataUrl(image) {
+    var source = image.currentSrc || image.src || "";
+    if (/^data:/i.test(source)) return Promise.resolve(source);
+    return new Promise(function (resolve, reject) {
+      try {
+        var canvas = image.ownerDocument.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch (error) {
+        if (!window.fetch) {
+          reject(error);
+          return;
+        }
+        window.fetch(source, { credentials: "same-origin" }).then(function (response) {
+          if (!response.ok) throw new Error("图片读取失败");
+          return response.blob();
+        }).then(function (blob) {
+          return new Promise(function (finish, fail) {
+            var reader = new FileReader();
+            reader.addEventListener("load", function () { finish(reader.result); }, { once: true });
+            reader.addEventListener("error", fail, { once: true });
+            reader.readAsDataURL(blob);
+          });
+        }).then(resolve, reject);
+      }
+    });
+  }
+
+  function inlineImages(root) {
+    return Promise.all(toArray(root.querySelectorAll("img")).map(function (image) {
+      return imageToDataUrl(image).then(function (dataUrl) {
+        image.removeAttribute("srcset");
+        image.src = dataUrl;
+      });
+    }));
+  }
+
+  function canvasToPng(canvas) {
+    return new Promise(function (resolve, reject) {
+      if (!canvas.toBlob) {
+        try {
+          var data = window.atob(canvas.toDataURL("image/png").split(",")[1]);
+          var bytes = new Uint8Array(data.length);
+          for (var index = 0; index < data.length; index += 1) bytes[index] = data.charCodeAt(index);
+          resolve(new Blob([bytes], { type: "image/png" }));
+        } catch (error) {
+          reject(error);
+        }
+        return;
+      }
+      canvas.toBlob(function (blob) {
+        if (blob) resolve(blob);
+        else reject(new Error("PNG 生成失败"));
+      }, "image/png");
+    });
+  }
+
+  function numberValue(value) {
+    var number = parseFloat(value);
+    return isFinite(number) ? number : 0;
+  }
+
+  function visibleColor(value) {
+    return value && value !== "transparent" && value !== "rgba(0, 0, 0, 0)";
+  }
+
+  function drawElementBox(context, element, rootRect, style) {
+    var rects = toArray(element.getClientRects());
+    rects.forEach(function (rect) {
+      var x = rect.left - rootRect.left;
+      var y = rect.top - rootRect.top;
+      if (visibleColor(style.backgroundColor)) {
+        context.fillStyle = style.backgroundColor;
+        context.fillRect(x, y, rect.width, rect.height);
+      }
+      [
+        ["Top", x, y, rect.width, numberValue(style.borderTopWidth)],
+        ["Right", x + rect.width - numberValue(style.borderRightWidth), y, numberValue(style.borderRightWidth), rect.height],
+        ["Bottom", x, y + rect.height - numberValue(style.borderBottomWidth), rect.width, numberValue(style.borderBottomWidth)],
+        ["Left", x, y, numberValue(style.borderLeftWidth), rect.height]
+      ].forEach(function (border) {
+        var color = style["border" + border[0] + "Color"];
+        if (!visibleColor(color) || border[3] <= 0 || border[4] <= 0) return;
+        context.fillStyle = color;
+        context.fillRect(border[1], border[2], border[3], border[4]);
+      });
+    });
+  }
+
+  function textFont(style) {
+    return [
+      style.fontStyle || "normal",
+      style.fontVariant || "normal",
+      style.fontWeight || "400",
+      style.fontSize || "16px",
+      style.fontFamily || "sans-serif"
+    ].join(" ");
+  }
+
+  function drawTextNode(context, node, rootRect) {
+    var text = node.nodeValue || "";
+    if (!text || !node.parentElement) return;
+    var style = window.getComputedStyle(node.parentElement);
+    if (style.display === "none" || style.visibility === "hidden" || !visibleColor(style.color)) return;
+    var range = node.ownerDocument.createRange();
+    var runs = [];
+    var current = null;
+    var previousRight = 0;
+    for (var index = 0; index < text.length; index += 1) {
+      range.setStart(node, index);
+      range.setEnd(node, index + 1);
+      var rect = range.getClientRects()[0];
+      if (!rect || (!rect.width && !rect.height)) continue;
+      var character = /\s/.test(text.charAt(index)) ? " " : text.charAt(index);
+      if (character === " " && current && /\s$/.test(current.text)) continue;
+      var sameLine = current && Math.abs(current.top - rect.top) < 1 && Math.abs(previousRight - rect.left) < 2;
+      if (!sameLine) {
+        current = { text: "", left: rect.left, top: rect.top, bottom: rect.bottom };
+        runs.push(current);
+      }
+      current.text += character;
+      current.bottom = Math.max(current.bottom, rect.bottom);
+      previousRight = rect.right;
+    }
+    range.detach();
+    context.fillStyle = style.color;
+    context.font = textFont(style);
+    context.textBaseline = "alphabetic";
+    context.textAlign = "left";
+    if ("letterSpacing" in context) context.letterSpacing = style.letterSpacing;
+    var fontSize = numberValue(style.fontSize) || 16;
+    runs.forEach(function (run) {
+      if (!run.text.trim()) return;
+      var x = run.left - rootRect.left;
+      var baseline = run.bottom - rootRect.top - Math.max(0, (run.bottom - run.top - fontSize) / 2) - fontSize * 0.18;
+      context.fillText(run.text, x, baseline);
+    });
+  }
+
+  function drawNode(context, node, rootRect) {
+    if (node.nodeType === 3) {
+      drawTextNode(context, node, rootRect);
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    var style = window.getComputedStyle(node);
+    if (style.display === "none" || style.visibility === "hidden" || numberValue(style.opacity) === 0) return;
+    drawElementBox(context, node, rootRect, style);
+    if (node.tagName.toLowerCase() === "img") {
+      var imageRect = node.getBoundingClientRect();
+      context.drawImage(node, imageRect.left - rootRect.left, imageRect.top - rootRect.top, imageRect.width, imageRect.height);
+      return;
+    }
+    toArray(node.childNodes).forEach(function (child) {
+      drawNode(context, child, rootRect);
+    });
+  }
+
+  function rasterizeElement(element) {
+    var width = Math.ceil(element.getBoundingClientRect().width);
+    var height = Math.ceil(element.getBoundingClientRect().height);
+    var requestedScale = Math.min(window.devicePixelRatio || 1, 2);
+    var scale = Math.min(
+      requestedScale,
+      EXPORT_MAX_DIMENSION / Math.max(width, height),
+      Math.sqrt(EXPORT_MAX_AREA / Math.max(1, width * height))
+    );
+    var outputWidth = Math.max(1, Math.floor(width * scale));
+    var outputHeight = Math.max(1, Math.floor(height * scale));
+    var canvas = element.ownerDocument.createElement("canvas");
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
+    var context = canvas.getContext("2d");
+    context.setTransform(scale, 0, 0, scale, 0, 0);
+    drawNode(context, element, element.getBoundingClientRect());
+    return canvasToPng(canvas);
+  }
+
+  function captureStatBlock(doc, responsive) {
+    var holder = makeElement(doc, "div", "statblock-export-holder");
+    var capture = makeElement(doc, "div", "statblock-export-capture");
+    var card = responsive.cloneNode(true);
+    var viewportWidth = Math.max(320, doc.documentElement.clientWidth || window.innerWidth || 720);
+    capture.style.width = Math.min(720, viewportWidth - 32) + "px";
+    card.hidden = false;
+    card.removeAttribute("aria-hidden");
+    card.style.display = "block";
+    capture.appendChild(card);
+    holder.appendChild(capture);
+    doc.body.appendChild(holder);
+    var fontsReady = doc.fonts && doc.fonts.ready ? doc.fonts.ready : Promise.resolve();
+    return fontsReady.then(function () {
+      return waitForImages(capture);
+    }).then(function () {
+      return inlineImages(capture);
+    }).then(function () {
+      return waitForImages(capture);
+    }).then(function () {
+      return rasterizeElement(capture);
+    }).then(function (blob) {
+      holder.parentNode.removeChild(holder);
+      return blob;
+    }, function (error) {
+      if (holder.parentNode) holder.parentNode.removeChild(holder);
+      throw error;
+    });
+  }
+
+  function safeFileName(value) {
+    return cleanText(value || "怪物卡").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 80) || "怪物卡";
+  }
+
+  function makePopupButton(doc, label, pathData) {
+    var button = makeElement(doc, "button", "export-action");
+    button.type = "button";
+    button.appendChild(makeSvgIcon(doc, pathData));
+    button.appendChild(doc.createTextNode(label));
+    return button;
+  }
+
+  function openExportWindow(title) {
+    var popup = window.open("", "_blank");
+    if (!popup) return null;
+    var doc = popup.document;
+    doc.open();
+    doc.write('<!doctype html><html lang="zh-Hans"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title></title></head><body></body></html>');
+    doc.close();
+    doc.title = title + " - 怪物卡图片";
+    var style = doc.createElement("style");
+    style.textContent = "*{box-sizing:border-box}html{color-scheme:light}body{margin:0;color:#242629;background:#ecebea;font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;letter-spacing:0}.export-bar{position:sticky;z-index:2;top:0;display:flex;align-items:center;gap:8px;min-height:56px;padding:8px max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));background:rgba(255,255,255,.96);border-bottom:1px solid #d4d1ce}.export-title{min-width:0;margin-right:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}.export-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 12px;color:#fff;background:#751515;border:1px solid #751515;border-radius:4px;font:inherit;font-weight:700;letter-spacing:0;cursor:pointer}.export-action:hover{background:#5f1111}.export-action:focus-visible{outline:3px solid #d6a130;outline-offset:2px}.statblock-button-icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.export-main{display:grid;place-items:start center;min-height:calc(100svh - 57px);padding:20px max(12px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}.export-status{place-self:center;margin:12vh 0;color:#555}.export-image{display:block;max-width:100%;height:auto;background:#fff;box-shadow:0 3px 14px rgba(0,0,0,.18)}[hidden]{display:none!important}@media(max-width:560px){.export-bar{flex-wrap:wrap}.export-title{flex:1 0 calc(100% - 8px)}.export-action{flex:1}.export-main{padding-top:12px}}@media(prefers-reduced-motion:no-preference){.export-image{animation:reveal .18s ease-out}@keyframes reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}}";
+    doc.head.appendChild(style);
+    var bar = makeElement(doc, "header", "export-bar");
+    var heading = makeElement(doc, "div", "export-title");
+    heading.textContent = title;
+    var download = makePopupButton(doc, "保存 PNG", "M12 3v12m0 0 4-4m-4 4-4-4M5 19h14");
+    var share = makePopupButton(doc, "分享", "M12 16V4m0 0-4 4m4-4 4 4M5 12v7h14v-7");
+    download.hidden = true;
+    share.hidden = true;
+    bar.appendChild(heading);
+    bar.appendChild(download);
+    bar.appendChild(share);
+    var main = makeElement(doc, "main", "export-main");
+    var status = makeElement(doc, "div", "export-status");
+    status.setAttribute("role", "status");
+    status.textContent = "正在生成图片…";
+    main.appendChild(status);
+    doc.body.appendChild(bar);
+    doc.body.appendChild(main);
+    return { window: popup, document: doc, main: main, status: status, download: download, share: share };
+  }
+
+  function showExportResult(view, blob, title) {
+    var fileName = safeFileName(title) + ".png";
+    var imageUrl = URL.createObjectURL(blob);
+    var image = makeElement(view.document, "img", "export-image");
+    image.alt = title;
+    image.src = imageUrl;
+    view.status.hidden = true;
+    view.main.appendChild(image);
+    view.download.hidden = false;
+    view.download.addEventListener("click", function () {
+      var link = view.document.createElement("a");
+      link.href = imageUrl;
+      link.download = fileName;
+      view.document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    });
+    try {
+      var file = new view.window.File([blob], fileName, { type: "image/png" });
+      var shareData = { files: [file], title: title };
+      if (view.window.navigator.share && (!view.window.navigator.canShare || view.window.navigator.canShare(shareData))) {
+        view.share.hidden = false;
+        view.share.addEventListener("click", function () {
+          view.window.navigator.share(shareData).catch(function () {});
+        });
+      }
+    } catch (error) {}
+  }
+
+  function addExportButton(doc, toggle, responsive) {
+    var button = makeElement(doc, "button", "statblock-view-toggle__button statblock-export-button");
+    var label = makeElement(doc, "span", "statblock-export-button__label");
+    var title = nodeText(responsive.querySelector(".statblock-responsive__title")) || doc.title || "怪物卡";
+    button.type = "button";
+    button.title = "生成并保存怪物卡图片";
+    button.appendChild(makeSvgIcon(doc, "M4 5h16v14H4zM8 10l2.5 3 2-2 3.5 4M15.5 8.5h.01"));
+    label.textContent = "导出图片";
+    button.appendChild(label);
+    toggle.appendChild(button);
+    button.addEventListener("click", function () {
+      var view = openExportWindow(title);
+      if (!view) {
+        label.textContent = "弹窗被拦截";
+        window.setTimeout(function () { label.textContent = "导出图片"; }, 2000);
+        return;
+      }
+      button.disabled = true;
+      label.textContent = "生成中…";
+      captureStatBlock(doc, responsive).then(function (blob) {
+        showExportResult(view, blob, title);
+      }).catch(function (error) {
+        view.status.textContent = error && error.message ? error.message : "图片生成失败";
+      }).then(function () {
+        button.disabled = false;
+        label.textContent = "导出图片";
+      });
+    });
+  }
+
   function wrapSource(doc, block) {
     var source = makeElement(doc, "div", "statblock-source");
     while (block.firstChild) source.appendChild(block.firstChild);
@@ -1242,6 +1579,7 @@
     originalButton.textContent = "原版布局";
     toggle.appendChild(mobileButton);
     toggle.appendChild(originalButton);
+    addExportButton(doc, toggle, responsive);
     block.parentNode.insertBefore(toggle, block);
     var view = readView();
     function apply(value) {
