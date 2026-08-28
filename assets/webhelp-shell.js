@@ -720,7 +720,7 @@
       projectVersion.hidden = false;
     }
     applySidebarWidth(readStorage("sidebarWidth") || sidebar.getBoundingClientRect().width || 288, false);
-    applyTheme(readStorage("theme") || "system", false);
+    applyTheme(readStorage("theme") || "light", false);
     applyFontSize(getFontSize(), false);
     if (isMobile()) closeDrawer();
     else setSidebarCollapsed(sidebarCollapsedByDefault(), false);
