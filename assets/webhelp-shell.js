@@ -223,9 +223,7 @@
   }
 
   function cycleTheme() {
-    var values = ["system", "light", "dark"];
-    var current = root.getAttribute("data-theme") || "system";
-    applyTheme(values[(values.indexOf(current) + 1) % values.length], true);
+    applyTheme(root.getAttribute("data-resolved-theme") === "dark" ? "light" : "dark", true);
   }
 
   function getFontSize() {
