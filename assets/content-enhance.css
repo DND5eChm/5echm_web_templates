@@ -461,6 +461,77 @@ html.quickref-document .quickref-mobile-summary {
   display: none;
 }
 
+html.quickref-document .quickref-preview {
+  position: fixed;
+  z-index: 200;
+  box-sizing: border-box;
+  width: min(42rem, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  padding: 12px 14px;
+  overflow: auto;
+  color: var(--table-text);
+  background: var(--quickref-surface);
+  border: 1px solid color-mix(in srgb, var(--table-text) 24%, var(--table-border));
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(24, 27, 31, 0.18);
+  font-size: 13px;
+  line-height: 1.55;
+  pointer-events: auto;
+  animation: quickref-preview-in 100ms ease-out;
+}
+
+html.quickref-document .quickref-preview[hidden] {
+  display: none;
+}
+
+html.quickref-document .quickref-preview-title {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--quickref-accent);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+html.quickref-document .quickref-preview-content {
+  color: var(--table-text);
+}
+
+html.quickref-document .quickref-preview-content > :first-child {
+  margin-top: 0 !important;
+}
+
+html.quickref-document .quickref-preview-content > :last-child {
+  margin-bottom: 0 !important;
+}
+
+html.quickref-document .quickref-preview-content img,
+html.quickref-document .quickref-preview-content table {
+  max-width: 100%;
+}
+
+html.quickref-document .quickref-preview-content a {
+  color: var(--quickref-accent);
+}
+
+@keyframes quickref-preview-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.quickref-document .quickref-preview {
+    animation: none;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  html.quickref-document .quickref-preview {
+    display: none !important;
+  }
+}
+
 @media (max-width: 900px) {
   html.quickref-document .quickref-toolbar {
     align-items: stretch;

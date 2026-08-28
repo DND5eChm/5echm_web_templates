@@ -413,6 +413,203 @@
     }
   }
 
+  function setupQuickReferencePreview(doc, table) {
+    var view = doc.defaultView;
+    if (!view || !view.matchMedia || !view.matchMedia("(hover: hover) and (pointer: fine)").matches || !view.fetch) return;
+
+    var preview = makeElement(doc, "aside", "quickref-preview");
+    var title = makeElement(doc, "strong", "quickref-preview-title");
+    var content = makeElement(doc, "div", "quickref-preview-content");
+    var documentCache = Object.create(null);
+    var previewCache = Object.create(null);
+    var entryAnchors = Object.create(null);
+    var timer = 0;
+    var hideTimer = 0;
+    var requestId = 0;
+    var activeLink = null;
+    preview.hidden = true;
+    preview.setAttribute("role", "tooltip");
+    preview.appendChild(title);
+    preview.appendChild(content);
+    doc.body.appendChild(preview);
+
+    function entryKey(value) {
+      try {
+        var url = new URL(value, doc.location.href);
+        var fragment = "";
+        try { fragment = decodeURIComponent(url.hash.slice(1)); } catch (error) { fragment = url.hash.slice(1); }
+        return url.origin + url.pathname + url.search + "#" + fragment;
+      } catch (error) {
+        return "";
+      }
+    }
+
+    toArray(table.querySelectorAll("a[data-quickref-preview-url]")).forEach(function (link) {
+      entryAnchors[entryKey(link.getAttribute("data-quickref-preview-url"))] = true;
+    });
+
+    function positionPreview() {
+      if (preview.hidden || !activeLink) return;
+      var margin = 12;
+      var offset = 12;
+      var anchorRect = activeLink.getBoundingClientRect();
+      var desiredWidth = Math.min(672, view.innerWidth - margin * 2);
+      var rightSpace = view.innerWidth - anchorRect.right - offset - margin;
+      var leftSpace = anchorRect.left - offset - margin;
+      var width;
+      var left;
+      preview.style.width = "";
+      if (rightSpace >= 360) {
+        width = Math.min(desiredWidth, rightSpace);
+        left = anchorRect.right + offset;
+      } else if (leftSpace >= 360) {
+        width = Math.min(desiredWidth, leftSpace);
+        left = anchorRect.left - offset - width;
+      } else {
+        width = desiredWidth;
+        left = Math.max(margin, view.innerWidth - width - margin);
+      }
+      preview.style.width = width + "px";
+      var rect = preview.getBoundingClientRect();
+      var top = Math.max(margin, Math.min(anchorRect.top - 8, view.innerHeight - rect.height - margin));
+      preview.style.left = Math.max(margin, left) + "px";
+      preview.style.top = top + "px";
+    }
+
+    function sectionPreview(html, sourceUrl, fallbackTitle) {
+      var parsed = new view.DOMParser().parseFromString(html, "text/html");
+      var source = new URL(sourceUrl, doc.location.href);
+      var anchorName = "";
+      try { anchorName = decodeURIComponent(source.hash.slice(1)); } catch (error) { anchorName = source.hash.slice(1); }
+      var target = anchorName && (parsed.getElementById(anchorName) || parsed.getElementsByName(anchorName)[0]);
+      if (!target) return { title: fallbackTitle, content: "未找到可预览内容" };
+
+      var heading = target.closest ? target.closest("h1, h2, h3, h4, h5, h6") : null;
+      if (!heading && target.nextElementSibling && /^H[1-6]$/.test(target.nextElementSibling.tagName)) heading = target.nextElementSibling;
+      var start = heading || (target.parentElement === parsed.body ? target.nextElementSibling : target.parentElement) || target;
+      var container = parsed.createElement("div");
+      var cursor = start.nextElementSibling;
+      var sourceKey = entryKey(source.href);
+      var nodeCount = 0;
+
+      function startsNextEntry(element) {
+        var anchors = [];
+        if (element.matches("[id], a[name]")) anchors.push(element);
+        anchors = anchors.concat(toArray(element.querySelectorAll("[id], a[name]")));
+        return anchors.some(function (anchor) {
+          var name = anchor.getAttribute("id") || anchor.getAttribute("name");
+          if (!name) return false;
+          var candidate = new URL(source.href);
+          candidate.hash = name;
+          var candidateKey = entryKey(candidate.href);
+          return candidateKey !== sourceKey && entryAnchors[candidateKey];
+        });
+      }
+
+      while (cursor && nodeCount < 400) {
+        if (startsNextEntry(cursor)) break;
+        var text = nodeText(cursor);
+        if (text) {
+          var clone = cursor.cloneNode(true);
+          toArray(clone.querySelectorAll("script, style, iframe, object, embed, form, input, button")).forEach(function (element) {
+            element.remove();
+          });
+          [clone].concat(toArray(clone.querySelectorAll("*"))).forEach(function (element) {
+            toArray(element.attributes).forEach(function (attribute) {
+              if (attribute.name === "id" || attribute.name === "name" || /^on/i.test(attribute.name)) element.removeAttribute(attribute.name);
+            });
+            ["src", "href"].forEach(function (attributeName) {
+              var value = element.getAttribute(attributeName);
+              if (!value || /^data:/i.test(value)) return;
+              if (/^javascript:/i.test(value)) {
+                element.removeAttribute(attributeName);
+                return;
+              }
+              try { element.setAttribute(attributeName, new URL(value, source.href).href); } catch (error) {}
+            });
+          });
+          container.appendChild(clone);
+        }
+        nodeCount += 1;
+        cursor = cursor.nextElementSibling;
+      }
+      return {
+        title: nodeText(heading || start) || fallbackTitle,
+        html: container.innerHTML,
+        content: container.innerHTML ? "" : "未找到可预览内容"
+      };
+    }
+
+    function loadPreview(link) {
+      var sourceUrl = link.getAttribute("data-quickref-preview-url");
+      if (previewCache[sourceUrl]) return previewCache[sourceUrl];
+      var documentUrl = sourceUrl.split("#")[0];
+      if (!documentCache[documentUrl]) {
+        documentCache[documentUrl] = view.fetch(documentUrl, { credentials: "same-origin" }).then(function (response) {
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          return response.text();
+        });
+      }
+      previewCache[sourceUrl] = documentCache[documentUrl].then(function (html) {
+        return sectionPreview(html, sourceUrl, nodeText(link));
+      });
+      return previewCache[sourceUrl];
+    }
+
+    function showPreview(link) {
+      var currentRequest = ++requestId;
+      view.clearTimeout(hideTimer);
+      activeLink = link;
+      title.textContent = nodeText(link);
+      content.textContent = "加载中…";
+      preview.hidden = false;
+      positionPreview();
+      loadPreview(link).then(function (result) {
+        if (currentRequest !== requestId || activeLink !== link) return;
+        title.textContent = result.title;
+        if (result.html) content.innerHTML = result.html;
+        else content.textContent = result.content;
+        positionPreview();
+      }).catch(function () {
+        if (currentRequest !== requestId || activeLink !== link) return;
+        content.textContent = "预览不可用";
+        positionPreview();
+      });
+    }
+
+    function hidePreview() {
+      view.clearTimeout(timer);
+      view.clearTimeout(hideTimer);
+      requestId += 1;
+      activeLink = null;
+      preview.hidden = true;
+    }
+
+    function scheduleHide() {
+      view.clearTimeout(hideTimer);
+      hideTimer = view.setTimeout(hidePreview, 180);
+    }
+
+    table.addEventListener("pointerover", function (event) {
+      var link = event.target.closest ? event.target.closest("a[data-quickref-preview-url]") : null;
+      if (!link || !table.contains(link) || link === activeLink) return;
+      view.clearTimeout(timer);
+      view.clearTimeout(hideTimer);
+      timer = view.setTimeout(function () { showPreview(link); }, 220);
+    });
+    table.addEventListener("pointerout", function (event) {
+      var link = event.target.closest ? event.target.closest("a[data-quickref-preview-url]") : null;
+      if (link && !link.contains(event.relatedTarget) && !preview.contains(event.relatedTarget)) scheduleHide();
+    });
+    preview.addEventListener("pointerenter", function () {
+      view.clearTimeout(timer);
+      view.clearTimeout(hideTimer);
+    });
+    preview.addEventListener("pointerleave", function (event) {
+      if (!activeLink || !activeLink.contains(event.relatedTarget)) scheduleHide();
+    });
+  }
+
   function levelRank(value) {
     var rank = ["戏法", "零环", "一环", "二环", "三环", "四环", "五环", "六环", "七环", "八环", "九环"].indexOf(cleanText(value));
     return rank < 0 ? 999 : rank;
@@ -473,6 +670,7 @@
       if (cells[0]) {
         cells[0].classList.add("quickref-primary");
         toArray(cells[0].querySelectorAll("a[href]")).forEach(function (link) {
+          link.setAttribute("data-quickref-preview-url", link.href);
           link.href = shellTopicUrl(doc, link) || link.href;
           link.target = "_blank";
           link.rel = "noopener";
@@ -480,6 +678,7 @@
       }
       row.appendChild(makeMobileSummary(doc, kind, cells));
     });
+    setupQuickReferencePreview(doc, table);
 
     var searchHost = searchInput.parentElement;
     var toolbar = makeElement(doc, "div", "quickref-toolbar");
