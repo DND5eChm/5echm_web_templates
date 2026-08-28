@@ -105,6 +105,23 @@ html.webhelp-topic-document table.table-enhanced > tr:hover {
   background: var(--table-hover);
 }
 
+html.webhelp-topic-document[data-webhelp-theme="dark"] table.table-enhanced[data-webhelp-legacy-background],
+html.webhelp-topic-document[data-webhelp-theme="dark"] table.table-enhanced [data-webhelp-legacy-background] {
+  background-color: var(--topic-surface-muted) !important;
+  background-color: color-mix(in srgb, var(--legacy-table-background) 18%, var(--topic-surface-muted)) !important;
+}
+
+html.webhelp-topic-document[data-webhelp-theme="dark"] table.table-enhanced[data-webhelp-legacy-foreground],
+html.webhelp-topic-document[data-webhelp-theme="dark"] table.table-enhanced [data-webhelp-legacy-foreground] {
+  color: var(--table-text) !important;
+  color: color-mix(in srgb, var(--legacy-table-foreground) 32%, var(--table-text)) !important;
+}
+
+html.webhelp-topic-document[data-webhelp-theme="dark"] table.table-enhanced tr:hover [data-webhelp-legacy-background] {
+  background-color: var(--table-hover) !important;
+  background-color: color-mix(in srgb, var(--legacy-table-background) 12%, var(--table-hover)) !important;
+}
+
 html.webhelp-topic-document table.table-enhanced--dice th:first-child,
 html.webhelp-topic-document table.table-enhanced--dice td:first-child {
   width: 3.5em;
