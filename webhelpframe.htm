@@ -1,31 +1,20 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">
-<!-- saved from url=(0014)about:internet -->
-<html>
+<!doctype html>
+<html lang="zh-CN">
 <head>
-<title>($PROJECTTITLE$)</title>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<script>
-var LocString=String(window.document.location.href);
-var DefaultPage;
-function GetQueryString(str){
-    var rs=new RegExp("(^|)"+str+"=([^\&]*)(\&|$)","gi").exec(LocString),tmp;
-    if(tmp=rs)return tmp[2];
-    return null;
-    }
-DefaultPage = GetQueryString("page");
-if(DefaultPage==null || DefaultPage==''){
-	DefaultPage = '($DEFAULTPAGE$)';
-}
-</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>($PROJECTTITLE$)</title>
+  <link rel="stylesheet" href="assets/webhelp-compat.css">
 </head>
-<script>
-document.write('<frameset rows="*" cols="($NAVWIDTH$),*" framespacing="5" frameborder="1" border="5" bordercolor="($BACKCOLOR$)">');
-document.write('<frame src="webhelpleft.htm" name="nav" frameborder="1" scrolling="no" bordercolor="($BACKCOLOR$)" id="nav">');
-document.write('<frame src="topics/' +  DefaultPage + '" name="content" frameborder="1" bordercolor="($BACKCOLOR$)" scrolling="auto" id="content">');
-document.write('</frameset>');
-</script>
-
-<noframes><body>
-
-</body></noframes>
+<body data-default-page="($DEFAULTPAGE$)" style="--compat-sidebar-width: clamp(240px, ($NAVWIDTH$)px, 420px); --legacy-back-color: ($BACKCOLOR$);">
+  <div class="compat-layout">
+    <aside class="compat-sidebar" aria-label="文档目录">
+      <iframe src="webhelpcontents.htm" name="nav" title="文档目录"></iframe>
+    </aside>
+    <main class="compat-content">
+      <iframe id="content" name="content" title="文档正文"></iframe>
+    </main>
+  </div>
+  <script src="assets/webhelp-frame.js"></script>
+</body>
 </html>

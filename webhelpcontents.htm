@@ -1,310 +1,41 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">
-<!-- saved from url=(0014)about:internet -->
-<html>
-
+<!doctype html>
+<html lang="zh-CN">
 <head>
-	<title>($PROJECTTITLE$)</title>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<style type="text/css">
-		<!-- 
-		.selected {
-			font-weight: normal;
-			background-color: #E2E2E2;
-			padding: 0px, 2px, 0px, 2px;
-		}
-
-		.unselected {
-			font-weight: normal;
-			padding: 0px, 2px, 0px, 2px;
-		}
-
-		.hand {
-			cursor: hand;
-		}
-
-		.p {
-			height: 16px;
-			width: 16px;
-			vertical-align: middle;
-			border: 0;
-		}
-
-		div,
-		body {
-			font-family: Tahoma, Verdana;
-			font-size: 16px;
-		}
-
-		A:link {
-			text-decoration: none;
-			color: #000000
-		}
-
-		A:visited {
-			text-decoration: none;
-			color: #000000
-		}
-
-		A:active {
-			text-decoration: none;
-			color: #000000
-		}
-
-		A:hover {
-			text-decoration: none;
-			color: #FF0000
-		}
-		-->
-	</style>
-
-	<SCRIPT LANGUAGE="JavaScript">
-		<!--
-		var cl,pn,pm,bl;
-		var path = 'icons/';
-		var pos = 0;
-		var icon;
-		var tar = 'content';
-		var display;
-		var imgi;
-		var AutoCollapse;
-		var LastSelected = -1;
-		var loaded = false;
-		var max;
-		var divlist;
-		
-		function SetEnv(v,a){
-		
-		if(v==0){ 
-			pn = [['daplus.gif','daminus.gif'],['tplus.gif','tminus.gif'],['uaplus.gif','uaminus.gif'],['splus.gif','sminus.gif']];
-			PreloadImg('downangle.gif','tshaped.gif','upangle.gif','sline.gif','daplus.gif','daminus.gif','tplus.gif','tminus.gif','uaplus.gif','uaminus.gif','splus.gif','sminus.gif','blank.gif','line.gif');
-		}else{
-			pn = [['plus.gif','minus.gif']];
-			PreloadImg('plus.gif','minus.gif','blank.gif');
-		
-		}
-		AutoCollapse = a;
-		}
-		
-		 function PreloadImg(){
-		if (document.images) { 
-			var imgs = PreloadImg.arguments; 
-			var pload = new Array();
-			for (var i=0; i<imgs.length; i++) { 
-				pload[i] = new Image; 
-				pload[i].src = path + imgs[i]; 
-			} 
-		} 
-		 } 
-		
-		function get(o){
-		var x;
-		if(document.all) x=document.all[o]; 
-		if(document.getElementById) x=document.getElementById(o);
-		
-		return x;
-		}
-		
-		
-		function pnImg(img){
-		var i,j;
-		for(i=0;i<=3;i++){
-			for(j=0;j<=1;j++){
-			if(img.substr(img.lastIndexOf('/') + 1)== pn[i][j]){
-				return i;
-			}
-			}
-		}
-		}
-		function icon(img){
-		var f;
-		f = img.substr(img.lastIndexOf('/') + 1);
-		if( f=='1.gif' || f=='2.gif'){
-			return ['1.gif','2.gif'];
-		}
-		if( f=='3.gif' || f=='4.gif'){
-			return ['3.gif','4.gif'];
-		}
-		if( f=='5.gif' || f=='6.gif'){
-			return ['5.gif','6.gif'];
-		}
-		if( f=='7.gif' || f=='8.gif'){
-			return ['7.gif','8.gif'];
-		}
-		return [f,f];
-		}
-		
-		function show(id){
-		get('d' + id).style.display='block';
-		if(get('imgn' + id )) get('imgn' + id ).src= path + pn[pnImg(get('imgn' + id ).src)][1];
-		get('img' + id ).src= path + icon(get('img' + id ).src)[1];
-		
-		}
-		
-		function collapse(id){
-		get('d' + id ).style.display='none';
-		if(get('imgn' + id )) get('imgn' + id ).src= path + pn[pnImg(get('imgn' + id ).src)][0];
-		get('img' + id ).src= path + icon(get('img' + id ).src)[0];
-		
-		}
-		
-		function collapseAll(){
-		var i;
-		var o;
-		for(i=0;i<=divlist.length-1;i++){
-			if(o=get('d' + divlist[i])){
-				if(o.style.display!='none'){ 
-					collapse(divlist[i]);
-				}
-			}
-		}
-		}
-		
-		function showAll(){
-		var i;
-		var o;
-		for(i=0;i<=divlist.length-1;i++){
-			if(o=get('d' + divlist[i])){
-				if(o.style.display!='block'){ 
-					show(divlist[i]);
-				}
-			}
-		}
-		}
-		
-		function unselectAll(){
-		var i=0;
-		while(get("l" + i)){
-			get("l" + i).className = "unselected";
-			i++;
-		}
-		}
-		
-		function clickNode(index){
-		var e;
-		
-		e = get("l" + index);
-		if(e==null) return;
-		e = e.parentNode;
-		if(e.nodeName == 'A'){
-			if(e.href!= window.location.href + '#'){
-				parent.parent.content.location.href = e.href;
-			}else{
-				selectNode(index);
-			}
-			e.onclick;
-		}
-		}
-		
-		function showParent(ele){
-		var e;
-		e = ele.parentNode;
-		
-		if(e==null) return;
-		
-		if(e.nodeName == 'DIV'){
-			if(e.id!='') show(e.id.substring(1,e.id.length ));
-		}else if(e.nodeName == 'A'){
-		
-		}
-		showParent(e);
-		}
-		
-		function showNode(index){
-		showParent(get("l" + index));
-		LinkClick(index);
-		}
-		
-		function selectNode(index){
-		if(LastSelected!=index){
-		//collapseAll();
-		showParent(get("l" + index));
-		LinkClick(index);
-		get('l' + index).scrollIntoView(true);
-		
-		
-		//alert(get('l' + index).offsetHeight + '|' + document.body.clientHeight + '|' + document.body.offsetHeight);
-		window.scrollTo(0,document.body.scrollTop); // - document.body.clientHeight /3);
-		}
-		}
-		
-		
-		function NodeClick(id){
-		if(get('d' + id ).style.display=='none'){
-			show(id);
-		}else{
-			collapse(id);
-		}
-		return false;
-		}
-		
-		function LinkDblClick(id){
-		if(!AutoCollapse){
-			if(get('d' + id ).style.display=='none'){
-				show(id);
-			}else{
-				collapse(id);
-			}
-		}
-		return false;
-		}
-		
-		function LinkClick(index,hasChild,r){
-		if(AutoCollapse && hasChild){
-			if(get('d' + index ).style.display=='none'){
-				collapseAll()
-				showParent(get('l' + index));
-				show(index);
-			}else{
-				collapseAll()
-				showParent(get('l' + index));	
-				collapse(index);
-			}
-		}
-		if(LastSelected!=-1){
-			get('l' + LastSelected).className = "unselected";
-		}
-		get('l' + index).className = "selected";
-		LastSelected = index;
-		return r;
-		}
-		
-		/* function body_onmousemove(event){
-		if(typeof(document.body.scrollTop)!='undefined'){
-		if(parseInt(event.clientX)<5){
-		window.scroll(0,document.body.scrollTop);}}
-		if(typeof(window.scrollY)!='undefined'){
-		if(parseInt(event.clientX)<5){
-		window.scrollTo(0,window.scrollY);}}
-		} */
-
-		window.defaultStatus = '';
-
-		function body_onload() {
-			get('loading').style.display = 'none';
-			loaded = true;
-			if (parent.parent.content.document.readyState) {
-				if (parent.parent.content.document.readyState == 'complete') {
-					try { parent.parent.content.syn(); } catch (e) { };
-				}
-			} else {
-				if (parent.parent.contentLoaded) {
-					try { parent.parent.content.syn(); } catch (e) { };
-				}
-			}
-		}
-
-		//-->
-	</SCRIPT>
-	<script language="JavaScript" src="languages.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>目录 - ($PROJECTTITLE$)</title>
+  <link rel="stylesheet" href="assets/webhelp-nav.css">
+  <script src="assets/webhelp-contents.js"></script>
 </head>
+<body class="nav-page contents-page">
+  <section class="contents-tools" aria-label="目录工具">
+    <div class="directory-filter">
+      <label class="visually-hidden" for="directoryFilter">过滤当前目录</label>
+      <input id="directoryFilter" type="search" placeholder="过滤当前目录……" autocomplete="off">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+    </div>
+    <div class="tree-actions">
+      <button id="expandSelectedButton" type="button" aria-label="展开当前项" title="展开当前项的下一级">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 9 4 4 4-4M5 19h14"/></svg>
+      </button>
+      <button id="collapseAllButton" type="button" aria-label="全部收起" title="收起所有目录项">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 15 4-4 4 4M5 5h14"/></svg>
+      </button>
+      <button id="previousTopicButton" type="button" aria-label="上一篇" title="上一篇">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <button id="nextTopicButton" type="button" aria-label="下一篇" title="下一篇">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <span class="filter-count" id="filterCount" aria-live="polite"></span>
+    </div>
+  </section>
 
-<body bgcolor="#ffffff" leftmargin="5" topmargin="5" marginwidth="5" marginheight="5"
-	onmousemove="body_onmousemove(event);" onload="body_onload();">
-	<div id="loading">
-		<font color="#FF0000" size="1"> Loading table of contents...
-		</font><br><br>
-	</div>
-	($NAVIGATION$)
+  <div class="navigation-scroll" id="navigationScroll">
+    <div class="navigation-loading" id="loading">正在生成目录……</div>
+    <nav class="navigation-tree" id="navigationTree" aria-label="内容目录">
+      ($NAVIGATION$)
+    </nav>
+  </div>
 </body>
-
 </html>
