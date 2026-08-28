@@ -6,7 +6,65 @@
   --table-text: var(--topic-text, #242629);
   --statblock-surface: var(--topic-surface, #ffffff);
   --statblock-muted: var(--topic-surface-muted, #f7f7f8);
+  --statblock-text: var(--topic-text, #242629);
+  --statblock-text-muted: var(--topic-text-muted, #666a70);
+  --statblock-border: var(--topic-border, #dedbd7);
   --statblock-accent: var(--topic-accent, #800000);
+  --statblock-ability-cell-1: #e9e3d6;
+  --statblock-ability-cell-2: #d8d0c9;
+  --statblock-ability-cell-3: #d2d6ce;
+  --statblock-ability-cell-4: #cbc6c6;
+}
+
+/* Theme legacy monster cards without changing generated topic markup. */
+html.webhelp-topic-document .stat-block {
+  color: var(--statblock-text);
+  background-color: var(--statblock-surface);
+  border-color: var(--statblock-border);
+}
+
+html.webhelp-topic-document .stat-block h5,
+html.webhelp-topic-document .stat-block h6 {
+  color: var(--statblock-accent);
+  border-bottom-color: var(--statblock-accent);
+}
+
+html.webhelp-topic-document .stat-block .sub-line {
+  color: var(--statblock-text-muted);
+}
+
+html.webhelp-topic-document .stat-block table {
+  color: var(--statblock-accent);
+}
+
+html.webhelp-topic-document .stat-block table.stat-abilities th {
+  color: var(--statblock-text-muted);
+}
+
+html.webhelp-topic-document .stat-block td.c1 {
+  background-color: var(--statblock-ability-cell-1);
+}
+
+html.webhelp-topic-document .stat-block td.c2 {
+  background-color: var(--statblock-ability-cell-2);
+}
+
+html.webhelp-topic-document .stat-block td.c3 {
+  background-color: var(--statblock-ability-cell-3);
+}
+
+html.webhelp-topic-document .stat-block td.c4 {
+  background-color: var(--statblock-ability-cell-4);
+}
+
+html.webhelp-topic-document[data-webhelp-theme="dark"] .stat-block[style*="background-color"],
+html.webhelp-topic-document[data-webhelp-theme="dark"] .stat-block[style*="BACKGROUND-COLOR"] {
+  background-color: var(--statblock-surface) !important;
+}
+
+html.webhelp-topic-document[data-webhelp-theme="dark"] .stat-block [style*="background-color"],
+html.webhelp-topic-document[data-webhelp-theme="dark"] .stat-block [style*="BACKGROUND-COLOR"] {
+  background-color: var(--statblock-muted) !important;
 }
 
 html.webhelp-topic-document table.table-enhanced {
@@ -367,4 +425,8 @@ html.webhelp-topic-document .statblock-layout-scroll {
   --table-header: #292526;
   --table-stripe: #1d1f21;
   --table-hover: #252326;
+  --statblock-ability-cell-1: #2e2525;
+  --statblock-ability-cell-2: #392d2e;
+  --statblock-ability-cell-3: #252b29;
+  --statblock-ability-cell-4: #2c2b2e;
 }
