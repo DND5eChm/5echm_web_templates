@@ -1417,8 +1417,7 @@
     var holder = makeElement(doc, "div", "statblock-export-holder");
     var capture = makeElement(doc, "div", "statblock-export-capture");
     var card = responsive.cloneNode(true);
-    var viewportWidth = Math.max(320, doc.documentElement.clientWidth || window.innerWidth || 720);
-    capture.style.width = Math.min(720, viewportWidth - 32) + "px";
+    capture.style.width = "720px";
     card.hidden = false;
     card.removeAttribute("aria-hidden");
     card.style.display = "block";
