@@ -2,6 +2,8 @@
 
 DND5e 不全书 WebHelp 模板。模板保留 WinCHM / `wcp2web` 占位符，输出纯静态 HTML5 站点。
 
+传统Chm的模板请查看 chm_templates 分支留档。
+
 ## 结构
 
 - `index.htm`：现代 WebHelp Shell；顶部工具栏、响应式侧栏和单个正文 iframe。
