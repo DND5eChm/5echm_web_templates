@@ -587,6 +587,13 @@ html.quickref-document table.quickref-table tr > :first-child a {
   margin-left: 0 !important;
 }
 
+/* Keep superseded spell entries visibly legacy after shell link theming. */
+html.quickref-document table.quickref-table a.legacy {
+  color: var(--quickref-text-muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
 html.quickref-document table.quickref-table .quickref-header td {
   color: var(--table-text);
   background: var(--table-header);
